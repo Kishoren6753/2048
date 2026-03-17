@@ -52,12 +52,14 @@ h1.title {
   text-align: right;
 }
 
-.theme-toggle {
+.theme-toggle,
+.sound-toggle {
   display: inline-flex;
   align-items: center;
   gap: 10px;
   margin-top: 8px;
   margin-bottom: 10px;
+  margin-left: 12px;
   user-select: none;
 
   input {
@@ -67,12 +69,17 @@ h1.title {
     accent-color: darken($game-container-background, 20%);
   }
 
-  .theme-toggle-label {
+  .theme-toggle-label,
+  .sound-toggle-label {
     font-size: 14px;
     font-weight: bold;
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
+}
+
+.theme-toggle {
+  margin-left: 0;
 }
 
 @include keyframes(move-up) {
@@ -181,8 +188,10 @@ body.theme-dark {
   }
 
   // Header + controls
-  .theme-toggle {
-    .theme-toggle-label {
+  .theme-toggle,
+  .sound-toggle {
+    .theme-toggle-label,
+    .sound-toggle-label {
       color: #e6e1dc;
     }
 
@@ -615,9 +624,12 @@ body.theme-dark {
     margin-top: 6px;
   }
 
-  .theme-toggle {
+  .theme-toggle,
+  .sound-toggle {
     margin-top: 0;
     margin-bottom: 8px;
+    margin-left: 0;
+    margin-right: 12px;
   }
 
   // Show intro and restart button side by side

@@ -1,8 +1,12 @@
-function GameManager(size, InputManager, Actuator, StorageManager) {
+function GameManager(size, InputManager, Actuator, StorageManager, soundManager) {
   this.size           = size; // Size of the grid
   this.inputManager   = new InputManager;
   this.storageManager = new StorageManager;
-  this.actuator       = new Actuator;
+
+  // Actuator is historically passed as a constructor; allow passing a factory too.
+  this.actuator       = (typeof Actuator === "function") ? new Actuator : Actuator;
+
+  this.soundManager   = soundManager || null;
 
   this.startTiles     = 2;
 
@@ -138,6 +142,10 @@ GameManager.prototype.move = function (direction) {
   var vector     = this.getVector(direction);
   var traversals = this.buildTraversals(vector);
   var moved      = false;
+  var mergedAny  = false;
+
+  var wasWon = this.won;
+  var wasOver = this.over;
 
   // Save the current tile positions and remove merger information
   this.prepareTiles();
@@ -165,6 +173,7 @@ GameManager.prototype.move = function (direction) {
 
           // Update the score
           self.score += merged.value;
+          mergedAny = true;
 
           // The mighty 2048 tile
           if (merged.value === 2048) self.won = true;
@@ -184,6 +193,19 @@ GameManager.prototype.move = function (direction) {
 
     if (!this.movesAvailable()) {
       this.over = true; // Game over!
+    }
+
+    // SFX: basic event sounds (only for actual moves).
+    if (this.soundManager) {
+      if (mergedAny) {
+        this.soundManager.playMerge();
+      } else {
+        this.soundManager.playMove();
+      }
+
+      // Note: win/lose are handled here too for immediate feedback.
+      if (!wasWon && this.won) this.soundManager.playWin();
+      if (!wasOver && this.over) this.soundManager.playLose();
     }
 
     this.actuate();

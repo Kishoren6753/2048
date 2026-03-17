@@ -59,9 +59,49 @@
     });
   }
 
+  // PUBLIC_INTERFACE
+  function initSoundToggle(soundManager) {
+    /** Initialize sound toggle (checked = sound on), apply persisted preference, and persist changes. */
+    var checkbox = document.getElementById("sound-toggle");
+    if (!checkbox) return;
+
+    // UI uses "checked means sound enabled", while SoundManager stores muted.
+    checkbox.checked = !soundManager.getMuted();
+
+    checkbox.addEventListener("change", function () {
+      // Unlock audio on interaction; some browsers require it.
+      soundManager.unlock();
+      soundManager.setMuted(!checkbox.checked);
+    });
+  }
+
+  function setupAudioUnlock(soundManager) {
+    // Ensure audio can start after the first user interaction anywhere in the game.
+    function unlockOnce() {
+      soundManager.unlock();
+      window.removeEventListener("pointerdown", unlockOnce);
+      window.removeEventListener("keydown", unlockOnce);
+      window.removeEventListener("touchend", unlockOnce);
+    }
+
+    window.addEventListener("pointerdown", unlockOnce, { passive: true });
+    window.addEventListener("keydown", unlockOnce);
+    window.addEventListener("touchend", unlockOnce, { passive: true });
+  }
+
   // Wait till the browser is ready to render the game (avoids glitches)
   window.requestAnimationFrame(function () {
     initThemeToggle();
-    new GameManager(4, KeyboardInputManager, HTMLActuator, LocalStorageManager);
+
+    var soundManager = new SoundManager({ volume: 0.25 });
+    initSoundToggle(soundManager);
+    setupAudioUnlock(soundManager);
+
+    var actuator = new HTMLActuator();
+
+    // Provide sound hooks to the actuator so it can play win/lose based on metadata.
+    actuator.setSoundManager(soundManager);
+
+    new GameManager(4, KeyboardInputManager, function () { return actuator; }, LocalStorageManager, soundManager);
   });
 })();

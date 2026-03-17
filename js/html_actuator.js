@@ -5,7 +5,16 @@ function HTMLActuator() {
   this.messageContainer = document.querySelector(".game-message");
 
   this.score = 0;
+
+  this.soundManager = null;
+  this._lastTerminationState = null; // "won" | "over" | null
 }
+
+// PUBLIC_INTERFACE
+HTMLActuator.prototype.setSoundManager = function (soundManager) {
+  /** Attach a SoundManager used for win/lose sounds triggered by UI message display. */
+  this.soundManager = soundManager || null;
+};
 
 HTMLActuator.prototype.actuate = function (grid, metadata) {
   var self = this;
@@ -27,9 +36,19 @@ HTMLActuator.prototype.actuate = function (grid, metadata) {
     if (metadata.terminated) {
       if (metadata.over) {
         self.message(false); // You lose
+        if (self.soundManager && self._lastTerminationState !== "over") {
+          self.soundManager.playLose();
+        }
+        self._lastTerminationState = "over";
       } else if (metadata.won) {
         self.message(true); // You win!
+        if (self.soundManager && self._lastTerminationState !== "won") {
+          self.soundManager.playWin();
+        }
+        self._lastTerminationState = "won";
       }
+    } else {
+      self._lastTerminationState = null;
     }
 
   });
@@ -38,6 +57,7 @@ HTMLActuator.prototype.actuate = function (grid, metadata) {
 // Continues the game (both restart and keep playing)
 HTMLActuator.prototype.continueGame = function () {
   this.clearMessage();
+  this._lastTerminationState = null;
 };
 
 HTMLActuator.prototype.clearContainer = function (container) {
