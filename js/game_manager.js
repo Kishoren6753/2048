@@ -1,4 +1,4 @@
-function GameManager(size, InputManager, Actuator, StorageManager, soundManager) {
+function GameManager(size, InputManager, Actuator, StorageManager, soundManager, speedConfig) {
   this.size           = size; // Size of the grid
   this.inputManager   = new InputManager;
   this.storageManager = new StorageManager;
@@ -8,6 +8,10 @@ function GameManager(size, InputManager, Actuator, StorageManager, soundManager)
 
   this.soundManager   = soundManager || null;
 
+  // SpeedModeFlow: per-move countdown timer configuration
+  // speedConfig: { enabled:boolean, secondsPerMove:number }
+  this.speed = this._normalizeSpeedConfig(speedConfig);
+
   this.startTiles     = 2;
 
   this.inputManager.on("move", this.move.bind(this));
@@ -15,8 +19,33 @@ function GameManager(size, InputManager, Actuator, StorageManager, soundManager)
   this.inputManager.on("keepPlaying", this.keepPlaying.bind(this));
   this.inputManager.on("undo", this.undo.bind(this));
 
+  // Timer runtime
+  this._speedTimerIntervalId = null;
+  this._speedMoveDeadlineMs = null; // epoch ms when move expires (only when enabled and game active)
+
   this.setup();
 }
+
+// PUBLIC_INTERFACE
+GameManager.prototype._normalizeSpeedConfig = function (speedConfig) {
+  /**
+   * Normalize Speed mode config into a stable internal shape.
+   *
+   * Inputs:
+   * - speedConfig: {enabled?:boolean, secondsPerMove?:number}|null
+   * Output:
+   * - { enabled:boolean, secondsPerMove:number }
+   * Invariants:
+   * - secondsPerMove is one of [2,3,5,8,10] when enabled; otherwise stored but unused.
+   */
+  var cfg = speedConfig || {};
+  var enabled = !!cfg.enabled;
+  var secs = parseInt(cfg.secondsPerMove, 10);
+  if (isNaN(secs)) secs = 5;
+  if ([2, 3, 5, 8, 10].indexOf(secs) === -1) secs = 5;
+
+  return { enabled: enabled, secondsPerMove: secs };
+};
 
 GameManager.prototype._isCompatibleUndoState = function (state) {
   // Undo snapshot must match current board size and contain the minimal required fields.
@@ -41,10 +70,90 @@ GameManager.prototype._setUndo = function (serializedState) {
   }
 };
 
+// --- SpeedModeFlow: timer lifecycle helpers ---
+
+GameManager.prototype._clearSpeedTimer = function () {
+  if (this._speedTimerIntervalId) {
+    clearInterval(this._speedTimerIntervalId);
+    this._speedTimerIntervalId = null;
+  }
+  this._speedMoveDeadlineMs = null;
+};
+
+GameManager.prototype._shouldRunSpeedTimer = function () {
+  // Timer runs only while playing (not terminated overlay) and when enabled.
+  return !!(this.speed && this.speed.enabled) && !this.isGameTerminated();
+};
+
+GameManager.prototype._resetSpeedMoveDeadline = function () {
+  if (!this.speed || !this.speed.enabled) {
+    this._speedMoveDeadlineMs = null;
+    return;
+  }
+  this._speedMoveDeadlineMs = Date.now() + (this.speed.secondsPerMove * 1000);
+};
+
+GameManager.prototype._getSpeedTimeRemainingMs = function () {
+  if (!this._speedMoveDeadlineMs) return 0;
+  return Math.max(0, this._speedMoveDeadlineMs - Date.now());
+};
+
+GameManager.prototype._tickSpeedTimer = function () {
+  // Called on an interval to enforce timeout.
+  if (!this._shouldRunSpeedTimer()) {
+    this._clearSpeedTimer();
+    return;
+  }
+
+  var remaining = this._getSpeedTimeRemainingMs();
+  if (remaining <= 0) {
+    // Time expired: terminate session as "over" and render.
+    this.over = true;
+
+    if (this.soundManager) {
+      this.soundManager.playLose();
+    }
+
+    this.actuate();
+    // actuation will clear persisted state for over; stop timer as well.
+    this._clearSpeedTimer();
+    return;
+  }
+
+  // Update UI via actuator metadata updates (actuator renders bar based on metadata).
+  // We call actuate lightly by re-sending current grid + updated metadata; this is simplest and
+  // keeps a single render path. requestAnimationFrame batching in actuator prevents thrash.
+  this.actuate();
+};
+
+GameManager.prototype._ensureSpeedTimerRunning = function () {
+  var self = this;
+
+  if (!this._shouldRunSpeedTimer()) {
+    this._clearSpeedTimer();
+    return;
+  }
+
+  if (this._speedTimerIntervalId) return;
+
+  // Lightweight tick (12.5fps) for UI smoothness without heavy CPU.
+  this._speedTimerIntervalId = setInterval(function () {
+    self._tickSpeedTimer();
+  }, 80);
+};
+
+GameManager.prototype._startNewTimedTurn = function () {
+  // Called when a new move window should begin (game start, after valid move, after undo, keepPlaying).
+  if (!this.speed || !this.speed.enabled) return;
+  this._resetSpeedMoveDeadline();
+  this._ensureSpeedTimerRunning();
+};
+
 // Restart the game
 GameManager.prototype.restart = function () {
   this.storageManager.clearGameState();
   this._clearUndo();
+  this._clearSpeedTimer();
   this.actuator.continueGame(); // Clear the game won/lost message
   this.setup(true);
 };
@@ -53,6 +162,10 @@ GameManager.prototype.restart = function () {
 GameManager.prototype.keepPlaying = function () {
   this.keepPlaying = true;
   this.actuator.continueGame(); // Clear the game won/lost message
+
+  // If Speed mode is enabled, continuing the game should resume the timer window.
+  this._startNewTimedTurn();
+  this.actuate();
 };
 
 // Return true if the game is lost, or has won and the user hasn't kept playing
@@ -80,6 +193,16 @@ GameManager.prototype.setup = function (forceNewGame) {
     this.won         = previousState.won;
     this.keepPlaying = previousState.keepPlaying;
 
+    // Speed mode: restore deadline if present (so refresh doesn't grant extra time),
+    // but clamp to "now + 0" if it's already expired.
+    if (this.speed && this.speed.enabled && typeof previousState.speedMoveDeadlineMs === "number") {
+      this._speedMoveDeadlineMs = previousState.speedMoveDeadlineMs;
+      if (this._getSpeedTimeRemainingMs() <= 0 && !this.isGameTerminated()) {
+        // Expired while away: end immediately.
+        this.over = true;
+      }
+    }
+
     // Restore undo state if present and compatible; otherwise clear it.
     if (previousUndoState && this._isCompatibleUndoState(previousUndoState)) {
       this.undoState = previousUndoState;
@@ -99,8 +222,22 @@ GameManager.prototype.setup = function (forceNewGame) {
     this.keepPlaying = false;
     this._clearUndo();
 
+    this._clearSpeedTimer();
+
     // Add the initial tiles
     this.addStartTiles();
+
+    // Start first timed turn if enabled
+    this._startNewTimedTurn();
+  }
+
+  // If we loaded a saved state and the game isn't terminated, ensure timer is running
+  if (this._shouldRunSpeedTimer()) {
+    this._ensureSpeedTimerRunning();
+    // If there wasn't a restored deadline, initialize one now.
+    if (!this._speedMoveDeadlineMs) this._startNewTimedTurn();
+  } else {
+    this._clearSpeedTimer();
   }
 
   // Update the actuator
@@ -139,15 +276,29 @@ GameManager.prototype.actuate = function () {
     this.storageManager.setGameState(this.serialize());
   }
 
+  var speedEnabled = !!(this.speed && this.speed.enabled);
+  var remainingMs = speedEnabled ? this._getSpeedTimeRemainingMs() : 0;
+  var totalMs = speedEnabled ? (this.speed.secondsPerMove * 1000) : 0;
+
   this.actuator.actuate(this.grid, {
     score:      this.score,
     over:       this.over,
     won:        this.won,
     bestScore:  this.storageManager.getBestScore(),
     terminated: this.isGameTerminated(),
-    canUndo:    !!this.undoState
+    canUndo:    !!this.undoState,
+
+    // SpeedModeFlow metadata for UI
+    speedModeEnabled: speedEnabled,
+    speedSecondsPerMove: speedEnabled ? this.speed.secondsPerMove : null,
+    speedTimeRemainingMs: speedEnabled ? remainingMs : null,
+    speedTimeTotalMs: speedEnabled ? totalMs : null
   });
 
+  // Stop timer if game is terminated (won without keepPlaying or over).
+  if (!this._shouldRunSpeedTimer()) {
+    this._clearSpeedTimer();
+  }
 };
 
 // Represent the current game as an object
@@ -158,7 +309,10 @@ GameManager.prototype.serialize = function () {
     score:       this.score,
     over:        this.over,
     won:         this.won,
-    keepPlaying: this.keepPlaying
+    keepPlaying: this.keepPlaying,
+
+    // SpeedModeFlow persistence
+    speedMoveDeadlineMs: this._speedMoveDeadlineMs
   };
 };
 
@@ -253,6 +407,10 @@ GameManager.prototype.move = function (direction) {
       this.over = true; // Game over!
     }
 
+    // SpeedModeFlow: after a successful move (whether merge or not), reset the per-move deadline.
+    // (If the move ended the game, actuate() will clear/stop timer.)
+    this._startNewTimedTurn();
+
     // SFX: basic event sounds (only for actual moves).
     if (this.soundManager) {
       if (mergedAny) {
@@ -301,6 +459,17 @@ GameManager.prototype.undo = function () {
   this.over        = snapshot.over;
   this.won         = snapshot.won;
   this.keepPlaying = snapshot.keepPlaying;
+
+  // Restore speed timer deadline from snapshot (so undo doesn't grant extra time),
+  // but if speed mode is enabled we still ensure the timer is running.
+  if (this.speed && this.speed.enabled) {
+    this._speedMoveDeadlineMs = snapshot.speedMoveDeadlineMs || null;
+    // If no deadline was saved (older snapshot), start a fresh turn now.
+    if (!this._speedMoveDeadlineMs) this._startNewTimedTurn();
+    this._ensureSpeedTimerRunning();
+  } else {
+    this._clearSpeedTimer();
+  }
 
   // One-step: consume it immediately.
   this._clearUndo();
@@ -395,3 +564,113 @@ GameManager.prototype.tileMatchesAvailable = function () {
 GameManager.prototype.positionsEqual = function (first, second) {
   return first.x === second.x && first.y === second.y;
 };
+
+Explanation: Render Speed timer UI in the actuator based on metadata (single canonical render path) and support a distinct "Time's up!" message.
+````patch file="2048/js/html_actuator.js"
+@@
+ function HTMLActuator() {
+   this.tileContainer    = document.querySelector(".tile-container");
+   this.scoreContainer   = document.querySelector(".score-container");
+   this.bestContainer    = document.querySelector(".best-container");
+   this.messageContainer = document.querySelector(".game-message");
+   this.gridContainer    = document.querySelector(".grid-container");
+   this.gameContainer    = document.querySelector(".game-container");
+   this.undoButton       = document.querySelector(".undo-button");
++  this.speedTimerEl     = document.querySelector(".speed-timer");
++  this.speedTimerFillEl = document.querySelector(".speed-timer-bar-fill");
++  this.speedTimerSecondsEl = document.querySelector(".speed-timer-seconds");
++  this.speedTimerBarEl  = document.querySelector(".speed-timer-bar");
+ 
+   this.score = 0;
+ 
+   this.soundManager = null;
+   this._lastTerminationState = null; // "won" | "over" | null
+@@
+ HTMLActuator.prototype.actuate = function (grid, metadata) {
+   var self = this;
+ 
+   // Ensure background grid + positioning CSS matches grid size.
+   self.ensureBoardRendered(grid.size);
+ 
+   window.requestAnimationFrame(function () {
+     self.clearContainer(self.tileContainer);
+@@
+     self.updateScore(metadata.score);
+     self.updateBestScore(metadata.bestScore);
+     self.updateUndoAvailability(!!metadata.canUndo);
++    self.updateSpeedTimer(metadata);
+ 
+     if (metadata.terminated) {
+       if (metadata.over) {
+-        self.message(false); // You lose
++        // Timeouts are communicated as a special-case message for clarity.
++        // If the timer hit 0, remainingMs is 0 and speedModeEnabled is true.
++        var isTimeout = !!(metadata.speedModeEnabled && typeof metadata.speedTimeRemainingMs === "number" && metadata.speedTimeRemainingMs <= 0);
++        self.message(false, isTimeout ? "Time's up!" : null); // You lose
+         if (self.soundManager && self._lastTerminationState !== "over") {
+           self.soundManager.playLose();
+         }
+         self._lastTerminationState = "over";
+       } else if (metadata.won) {
+         self.message(true); // You win!
+@@
+ 
+   });
+ };
++
++// PUBLIC_INTERFACE
++HTMLActuator.prototype.updateSpeedTimer = function (metadata) {
++  /**
++   * SpeedModeFlow UI rendering.
++   *
++   * Inputs:
++   * - metadata.speedModeEnabled:boolean
++   * - metadata.speedTimeRemainingMs:number|null
++   * - metadata.speedTimeTotalMs:number|null
++   * Output: void
++   * Side effects: updates timer bar + label; hides UI when disabled.
++   */
++  if (!this.speedTimerEl) return;
++
++  var enabled = !!(metadata && metadata.speedModeEnabled);
++  this.speedTimerEl.hidden = !enabled;
++  if (!enabled) return;
++
++  var remainingMs = typeof metadata.speedTimeRemainingMs === "number" ? metadata.speedTimeRemainingMs : 0;
++  var totalMs = typeof metadata.speedTimeTotalMs === "number" ? metadata.speedTimeTotalMs : 1;
++
++  var pct = totalMs > 0 ? Math.max(0, Math.min(1, remainingMs / totalMs)) : 0;
++  var pct100 = Math.round(pct * 100);
++
++  if (this.speedTimerFillEl) {
++    this.speedTimerFillEl.style.width = String(pct100) + "%";
++    // Mild urgency color shift near end.
++    if (pct <= 0.2) {
++      this.speedTimerFillEl.style.background = "#d9480f";
++    } else if (pct <= 0.4) {
++      this.speedTimerFillEl.style.background = "#e67700";
++    } else {
++      this.speedTimerFillEl.style.background = "";
++    }
++  }
++
++  if (this.speedTimerSecondsEl) {
++    // Display as 1 decimal place seconds (e.g., 3.2)
++    var secs = remainingMs / 1000;
++    this.speedTimerSecondsEl.textContent = secs.toFixed(1);
++  }
++
++  if (this.speedTimerBarEl) {
++    this.speedTimerBarEl.setAttribute("aria-valuenow", String(pct100));
++  }
++};
+@@
+-HTMLActuator.prototype.message = function (won) {
++HTMLActuator.prototype.message = function (won, overrideText) {
+   var type    = won ? "game-won" : "game-over";
+-  var message = won ? "You win!" : "Game over!";
++  var message = overrideText || (won ? "You win!" : "Game over!");
+ 
+   this.messageContainer.classList.add(type);
+   this.messageContainer.getElementsByTagName("p")[0].textContent = message;
+ };

@@ -42,6 +42,22 @@
           </select>
         </label>
 
+        <label class="speed-toggle" for="speed-toggle">
+          <input id="speed-toggle" type="checkbox" aria-label="Toggle Speed mode (move timer)">
+          <span class="speed-toggle-label">Speed</span>
+        </label>
+
+        <label class="speed-time-control" for="speed-time-select">
+          <span class="speed-time-label">Time</span>
+          <select id="speed-time-select" aria-label="Select time per move">
+            <option value="2">2s</option>
+            <option value="3">3s</option>
+            <option value="5" selected>5s</option>
+            <option value="8">8s</option>
+            <option value="10">10s</option>
+          </select>
+        </label>
+
         <div class="scores-container">
           <div class="score-container">0</div>
           <div class="best-container">0</div>
@@ -54,6 +70,16 @@
       <div class="game-buttons">
         <a class="restart-button">New Game</a>
         <a class="undo-button" role="button" aria-disabled="true" aria-label="Undo last move (U)">Undo</a>
+      </div>
+    </div>
+
+    <div class="speed-timer" aria-live="polite" aria-atomic="true" hidden>
+      <div class="speed-timer-row">
+        <div class="speed-timer-label">Move timer</div>
+        <div class="speed-timer-value"><span class="speed-timer-seconds">0.0</span>s</div>
+      </div>
+      <div class="speed-timer-bar" role="progressbar" aria-label="Time remaining for current move" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="speed-timer-bar-fill"></div>
       </div>
     </div>
 

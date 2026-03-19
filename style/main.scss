@@ -78,6 +78,45 @@ h1.title {
   }
 }
 
+.speed-toggle {
+  // Keep the same UI affordance as other toggles (dark mode/sound).
+  @extend .theme-toggle;
+
+  .speed-toggle-label {
+    font-size: 14px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+}
+
+.speed-time-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  margin-bottom: 10px;
+  margin-left: 12px;
+  user-select: none;
+
+  .speed-time-label {
+    font-size: 14px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  select {
+    height: 32px;
+    border-radius: 3px;
+    border: 1px solid rgba($text-color, 0.35);
+    background: rgba(255, 255, 255, 0.85);
+    color: $text-color;
+    font-weight: bold;
+    padding: 0 8px;
+  }
+}
+
 .theme-toggle {
   margin-left: 0;
 }
@@ -197,6 +236,18 @@ body.theme-dark {
 
     input {
       accent-color: #7a6757;
+    }
+  }
+
+  .speed-time-control {
+    .speed-time-label {
+      color: #e6e1dc;
+    }
+
+    select {
+      background: rgba(58, 51, 46, 0.85);
+      border-color: rgba(230, 225, 220, 0.18);
+      color: #e6e1dc;
     }
   }
 
@@ -576,6 +627,45 @@ body.theme-dark {
   align-items: center;
 }
 
+.speed-timer {
+  margin-top: 12px;
+  margin-bottom: -10px;
+}
+
+.speed-timer-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.speed-timer-label {
+  font-size: 14px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.speed-timer-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: bold;
+}
+
+.speed-timer-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba($text-color, 0.18);
+  overflow: hidden;
+}
+
+.speed-timer-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: darken($game-container-background, 20%);
+  @include transition(width 80ms linear, background 120ms ease);
+}
+
 .restart-button {
   @include button;
   display: block;
@@ -650,6 +740,19 @@ body.theme-dark {
     margin-bottom: 8px;
     margin-left: 0;
     margin-right: 12px;
+  }
+
+  .speed-toggle,
+  .speed-time-control {
+    margin-top: 0;
+    margin-bottom: 8px;
+    margin-left: 0;
+    margin-right: 12px;
+  }
+
+  .speed-timer {
+    margin-top: 8px;
+    margin-bottom: -6px;
   }
 
   // Show intro and restart button side by side

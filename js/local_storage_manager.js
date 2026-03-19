@@ -24,6 +24,10 @@ function LocalStorageManager() {
   this.undoStateKeyBase = "undoState";
   this.boardSizeKey = "boardSize";
 
+  // Speed mode settings
+  this.speedModeEnabledKey = "speedModeEnabled";
+  this.speedModeSecondsKey = "speedModeSeconds";
+
   var supported = this.localStorageSupported();
   this.storage = supported ? window.localStorage : window.fakeStorage;
 }
@@ -51,11 +55,41 @@ LocalStorageManager.prototype._getStoredBoardSize = function () {
   return this.storage.getItem(this.boardSizeKey);
 };
 
+LocalStorageManager.prototype._getStoredSpeedModeEnabled = function () {
+  return this.storage.getItem(this.speedModeEnabledKey);
+};
+
+LocalStorageManager.prototype._getStoredSpeedModeSeconds = function () {
+  return this.storage.getItem(this.speedModeSecondsKey);
+};
+
+LocalStorageManager.prototype._normalizeSpeedModeEnabled = function (raw) {
+  if (raw === null || raw === undefined) return false;
+  return raw === true || raw === "true";
+};
+
+LocalStorageManager.prototype._normalizeSpeedModeSeconds = function (raw) {
+  var n = parseInt(raw, 10);
+  if (isNaN(n)) return 5;
+  // Supported UI options; default to 5 if out of band.
+  return (n === 2 || n === 3 || n === 5 || n === 8 || n === 10) ? n : 5;
+};
+
+LocalStorageManager.prototype._modeScopeToken = function () {
+  // Mode token is part of state keys to prevent mixing different rule sets.
+  // When speed mode is disabled, we still scope consistently to "classic".
+  var enabled = this._normalizeSpeedModeEnabled(this._getStoredSpeedModeEnabled());
+  if (!enabled) return "classic";
+  var secs = this._normalizeSpeedModeSeconds(this._getStoredSpeedModeSeconds());
+  return "speed" + String(secs);
+};
+
 LocalStorageManager.prototype._scopedKey = function (baseKey) {
-  // Invariant: both best score and game state are scoped per board size.
-  // This prevents mixing scores/states across incompatible grid dimensions.
+  // Invariant: best score, game state, and undo state are scoped per (board size + mode).
+  // This prevents mixing incompatible states across grid dimensions or gameplay rules.
   var size = this._normalizeBoardSize(this._getStoredBoardSize());
-  return baseKey + "_" + String(size);
+  var mode = this._modeScopeToken();
+  return baseKey + "_" + String(size) + "_" + mode;
 };
 
 // PUBLIC_INTERFACE
@@ -69,6 +103,31 @@ LocalStorageManager.prototype.setBoardSize = function (size) {
   /** Persist board size; does not automatically clear game state. */
   var normalized = this._normalizeBoardSize(size);
   this.storage.setItem(this.boardSizeKey, String(normalized));
+};
+
+// PUBLIC_INTERFACE
+LocalStorageManager.prototype.getSpeedModeEnabled = function () {
+  /** Get persisted Speed mode enabled flag (boolean). */
+  return this._normalizeSpeedModeEnabled(this._getStoredSpeedModeEnabled());
+};
+
+// PUBLIC_INTERFACE
+LocalStorageManager.prototype.setSpeedModeEnabled = function (enabled) {
+  /** Persist Speed mode enabled flag (boolean). */
+  this.storage.setItem(this.speedModeEnabledKey, enabled ? "true" : "false");
+};
+
+// PUBLIC_INTERFACE
+LocalStorageManager.prototype.getSpeedModeSeconds = function () {
+  /** Get persisted Speed mode seconds-per-move (normalized), defaulting to 5. */
+  return this._normalizeSpeedModeSeconds(this._getStoredSpeedModeSeconds());
+};
+
+// PUBLIC_INTERFACE
+LocalStorageManager.prototype.setSpeedModeSeconds = function (seconds) {
+  /** Persist Speed mode seconds-per-move (normalized). */
+  var normalized = this._normalizeSpeedModeSeconds(seconds);
+  this.storage.setItem(this.speedModeSecondsKey, String(normalized));
 };
 
 // Best score getters/setters

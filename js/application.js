@@ -109,9 +109,17 @@
     window.localStorage.setItem(BOARD_SIZE_STORAGE_KEY, String(size));
   }
 
-  function createGameManager(boardSize, actuator, soundManager) {
+  function createGameManager(boardSize, actuator, soundManager, speedConfig) {
     // Keep creation centralized so the app has one canonical place for wiring.
-    return new GameManager(boardSize, KeyboardInputManager, function () { return actuator; }, LocalStorageManager, soundManager);
+    // speedConfig: { enabled:boolean, secondsPerMove:number }
+    return new GameManager(
+      boardSize,
+      KeyboardInputManager,
+      function () { return actuator; },
+      LocalStorageManager,
+      soundManager,
+      speedConfig
+    );
   }
 
   // PUBLIC_INTERFACE
@@ -174,7 +182,12 @@
       storageManager.clearGameState();
 
       // Create a fresh manager (new grid + tiles); actuator UI is reused.
-      gameManager = createGameManager(currentSize, actuator, soundManager);
+      var speedEnabled = storageManager.getSpeedModeEnabled && storageManager.getSpeedModeEnabled();
+      var speedSeconds = storageManager.getSpeedModeSeconds && storageManager.getSpeedModeSeconds();
+      gameManager = createGameManager(currentSize, actuator, soundManager, {
+        enabled: !!speedEnabled,
+        secondsPerMove: speedSeconds || 5
+      });
     }
 
     // Initialize from stored preference (if any) or from current select value.
@@ -189,6 +202,104 @@
     return {
       getSize: function () { return currentSize; },
       setSize: function (size) { applySize(size, "api"); }
+    };
+  }
+
+  // PUBLIC_INTERFACE
+  function initSpeedModeControls(options) {
+    /**
+     * SpeedModeFlow (Maintainable, Non-Patchy) - single entrypoint for timed mode settings.
+     *
+     * Contract:
+     * - Inputs:
+     *   - options.toggleEl: HTMLInputElement checkbox (required)
+     *   - options.secondsSelectEl: HTMLSelectElement (required)
+     *   - options.storageManager: LocalStorageManager (required)
+     *   - options.actuator: HTMLActuator (required)
+     *   - options.soundManager: SoundManager|null (optional)
+     * - Behavior:
+     *   - Persists enabled + seconds-per-move
+     *   - Clears saved game state + undo when rules change (prevents incompatible restore)
+     *   - Recreates GameManager using current board size
+     * - Output:
+     *   - returns { getConfig():{enabled,secondsPerMove}, setConfig(cfg) }
+     */
+    var toggleEl = options && options.toggleEl;
+    var secondsSelectEl = options && options.secondsSelectEl;
+    var storageManager = options && options.storageManager;
+    var actuator = options && options.actuator;
+    var soundManager = (options && options.soundManager) || null;
+
+    if (!toggleEl || !secondsSelectEl || !storageManager || !actuator) {
+      console.warn("[SpeedModeFlow] Missing required dependencies; not initializing.");
+      return {
+        getConfig: function () { return { enabled: false, secondsPerMove: 5 }; },
+        setConfig: function () {}
+      };
+    }
+
+    function normalizeSeconds(value) {
+      var n = parseInt(value, 10);
+      if (isNaN(n)) return 5;
+      return (n === 2 || n === 3 || n === 5 || n === 8 || n === 10) ? n : 5;
+    }
+
+    var gameManager = null;
+
+    function recreateGame(source) {
+      var size = storageManager.getBoardSize ? storageManager.getBoardSize() : 4;
+      var cfg = {
+        enabled: !!toggleEl.checked,
+        secondsPerMove: normalizeSeconds(secondsSelectEl.value)
+      };
+
+      console.info("[SpeedModeFlow] Recreating game with config:", cfg, "source:", source || "unknown");
+
+      // Prevent restoring incompatible sessions (different rule set).
+      storageManager.clearGameState();
+      if (storageManager.clearUndoState) storageManager.clearUndoState();
+
+      gameManager = createGameManager(size, actuator, soundManager, cfg);
+    }
+
+    function applyConfig(nextCfg, source) {
+      var enabled = !!(nextCfg && nextCfg.enabled);
+      var seconds = normalizeSeconds(nextCfg && nextCfg.secondsPerMove);
+
+      toggleEl.checked = enabled;
+      secondsSelectEl.value = String(seconds);
+
+      if (storageManager.setSpeedModeEnabled) storageManager.setSpeedModeEnabled(enabled);
+      if (storageManager.setSpeedModeSeconds) storageManager.setSpeedModeSeconds(seconds);
+
+      // Always recreate when settings change (simple + deterministic).
+      recreateGame(source);
+    }
+
+    // Init from storage
+    var initialEnabled = storageManager.getSpeedModeEnabled ? storageManager.getSpeedModeEnabled() : false;
+    var initialSeconds = storageManager.getSpeedModeSeconds ? storageManager.getSpeedModeSeconds() : 5;
+    toggleEl.checked = !!initialEnabled;
+    secondsSelectEl.value = String(normalizeSeconds(initialSeconds));
+
+    // Create initial game manager instance for this flow (in case board size flow doesn't).
+    // Note: BoardSizeFlow already creates one, but we keep this idempotent: recreating immediately
+    // ensures mode scoping is correct if speed mode differs from a previously saved state.
+    recreateGame("init");
+
+    toggleEl.addEventListener("change", function () {
+      applyConfig({ enabled: toggleEl.checked, secondsPerMove: secondsSelectEl.value }, "ui-toggle");
+    });
+
+    secondsSelectEl.addEventListener("change", function () {
+      applyConfig({ enabled: toggleEl.checked, secondsPerMove: secondsSelectEl.value }, "ui-seconds");
+    });
+
+    return {
+      getConfig: function () {
+        return { enabled: !!toggleEl.checked, secondsPerMove: normalizeSeconds(secondsSelectEl.value) };
+      },
+      setConfig: function (cfg) { applyConfig(cfg, "api"); }
     };
   }
 
@@ -209,6 +320,15 @@
     var selectEl = document.getElementById("board-size-select");
     initBoardSizeSelector({
       selectEl: selectEl,
+      storageManager: storageManager,
+      actuator: actuator,
+      soundManager: soundManager
+    });
+
+    // Speed mode controls (move timer)
+    initSpeedModeControls({
+      toggleEl: document.getElementById("speed-toggle"),
+      secondsSelectEl: document.getElementById("speed-time-select"),
       storageManager: storageManager,
       actuator: actuator,
       soundManager: soundManager
