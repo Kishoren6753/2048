@@ -213,7 +213,7 @@ hr {
   margin-bottom: 30px;
 }
 
-// Dark theme overrides (kept near global elements for clarity)
+/* Dark theme overrides (kept near global elements for clarity) */
 body.theme-dark {
   background: #121212;
   color: #e6e1dc;
@@ -226,11 +226,13 @@ body.theme-dark {
     border-bottom-color: rgba(230, 225, 220, 0.18);
   }
 
-  // Header + controls
+  /* Header + controls */
   .theme-toggle,
-  .sound-toggle {
+  .sound-toggle,
+  .speed-toggle {
     .theme-toggle-label,
-    .sound-toggle-label {
+    .sound-toggle-label,
+    .speed-toggle-label {
       color: #e6e1dc;
     }
 
@@ -239,7 +241,10 @@ body.theme-dark {
     }
   }
 
+  /* Select controls */
+  .board-size-control,
   .speed-time-control {
+    .board-size-label,
     .speed-time-label {
       color: #e6e1dc;
     }
@@ -251,7 +256,7 @@ body.theme-dark {
     }
   }
 
-  // Score badges
+  /* Score badges */
   .score-container, .best-container {
     background: #3a332e;
 
@@ -264,7 +269,7 @@ body.theme-dark {
     }
   }
 
-  // Game board surfaces
+  /* Game board surfaces */
   .game-container {
     background: #2b2622;
 
@@ -286,14 +291,30 @@ body.theme-dark {
     background: rgba(255, 255, 255, 0.07);
   }
 
-  // Keep existing tile colors (game readability), but improve contrast for low tiles
+  /* Speed timer */
+  .speed-timer-label,
+  .speed-timer-value {
+    color: #e6e1dc;
+  }
+
+  .speed-timer-bar {
+    background: rgba(255, 255, 255, 0.10);
+  }
+
+  .speed-timer-bar-fill {
+    background: #4b4138;
+  }
+
+  /* Keep existing tile colors (game readability), but improve contrast for low tiles */
   .tile.tile-2 .tile-inner,
   .tile.tile-4 .tile-inner {
     color: #2b2622;
   }
 
-  // Buttons
-  .restart-button {
+  /* Buttons */
+  .restart-button,
+  .undo-button,
+  .game-container .game-message a {
     background: #4b4138;
     color: #f9f6f2;
   }

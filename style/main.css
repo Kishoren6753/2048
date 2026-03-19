@@ -214,25 +214,62 @@ body.theme-dark hr {
 
 body.theme-dark .theme-toggle .theme-toggle-label,
 body.theme-dark .sound-toggle .sound-toggle-label,
-body.theme-dark .board-size-control .board-size-label {
+body.theme-dark .speed-toggle .speed-toggle-label {
   color: #e6e1dc; }
 
 body.theme-dark .theme-toggle input,
-body.theme-dark .sound-toggle input {
+body.theme-dark .sound-toggle input,
+body.theme-dark .speed-toggle input {
   accent-color: #7a6757; }
 
-body.theme-dark .board-size-control select {
-  background: rgba(58, 51, 46, 0.85);
-  border-color: rgba(230, 225, 220, 0.18);
-  color: #e6e1dc; }
-
+body.theme-dark .board-size-control .board-size-label,
 body.theme-dark .speed-time-control .speed-time-label {
   color: #e6e1dc; }
 
+body.theme-dark .board-size-control select,
 body.theme-dark .speed-time-control select {
   background: rgba(58, 51, 46, 0.85);
   border-color: rgba(230, 225, 220, 0.18);
   color: #e6e1dc; }
+
+body.theme-dark .speed-timer-label,
+body.theme-dark .speed-timer-value {
+  color: #e6e1dc; }
+
+body.theme-dark .speed-timer-bar {
+  background: rgba(255, 255, 255, 0.1); }
+
+body.theme-dark .speed-timer-bar-fill {
+  background: #4b4138; }
+
+body.theme-dark .score-container, body.theme-dark .best-container {
+  background: #3a332e; }
+  body.theme-dark .score-container:after, body.theme-dark .best-container:after {
+    color: rgba(249, 246, 242, 0.75); }
+  body.theme-dark .score-container .score-addition, body.theme-dark .best-container .score-addition {
+    color: rgba(249, 246, 242, 0.85); }
+
+body.theme-dark .game-container {
+  background: #2b2622; }
+  body.theme-dark .game-container .game-message {
+    background: rgba(0, 0, 0, 0.45); }
+    body.theme-dark .game-container .game-message a {
+      background: #4b4138;
+      color: #f9f6f2; }
+    body.theme-dark .game-container .game-message.game-won {
+      background: rgba(237, 194, 46, 0.35); }
+
+body.theme-dark .grid-cell {
+  background: rgba(255, 255, 255, 0.07); }
+
+body.theme-dark .tile.tile-2 .tile-inner,
+body.theme-dark .tile.tile-4 .tile-inner {
+  color: #2b2622; }
+
+body.theme-dark .restart-button,
+body.theme-dark .undo-button {
+  background: #4b4138;
+  color: #f9f6f2; }
 
 .container {
   width: 500px;
