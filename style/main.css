@@ -22,6 +22,48 @@ h1.title {
   display: block;
   float: left; }
 
+.heading-controls {
+  float: right;
+  text-align: right; }
+
+.theme-toggle,
+.sound-toggle,
+.board-size-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  margin-bottom: 10px;
+  margin-left: 12px;
+  user-select: none; }
+
+.theme-toggle input,
+.sound-toggle input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: #86786a; }
+
+.theme-toggle .theme-toggle-label,
+.sound-toggle .sound-toggle-label,
+.board-size-control .board-size-label {
+  font-size: 14px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.04em; }
+
+.theme-toggle {
+  margin-left: 0; }
+
+.board-size-control select {
+  height: 32px;
+  border-radius: 3px;
+  border: 1px solid rgba(119, 110, 101, 0.35);
+  background: rgba(255, 255, 255, 0.85);
+  color: #776e65;
+  font-weight: bold;
+  padding: 0 8px; }
+
 @-webkit-keyframes move-up {
   0% {
     top: 25px;
@@ -114,6 +156,30 @@ hr {
   border-bottom: 1px solid #d8d4d0;
   margin-top: 20px;
   margin-bottom: 30px; }
+
+body.theme-dark {
+  background: #121212;
+  color: #e6e1dc; }
+
+body.theme-dark a {
+  color: #e6e1dc; }
+
+body.theme-dark hr {
+  border-bottom-color: rgba(230, 225, 220, 0.18); }
+
+body.theme-dark .theme-toggle .theme-toggle-label,
+body.theme-dark .sound-toggle .sound-toggle-label,
+body.theme-dark .board-size-control .board-size-label {
+  color: #e6e1dc; }
+
+body.theme-dark .theme-toggle input,
+body.theme-dark .sound-toggle input {
+  accent-color: #7a6757; }
+
+body.theme-dark .board-size-control select {
+  background: rgba(58, 51, 46, 0.85);
+  border-color: rgba(230, 225, 220, 0.18);
+  color: #e6e1dc; }
 
 .container {
   width: 500px;
@@ -557,6 +623,11 @@ hr {
   .heading {
     margin-bottom: 10px; }
 
+  .heading-controls {
+    float: none;
+    text-align: left;
+    margin-top: 6px; }
+
   .game-intro {
     width: 55%;
     display: block;
@@ -633,6 +704,14 @@ hr {
           display: inline-block; }
       .game-container .game-message.game-won, .game-container .game-message.game-over {
         display: block; }
+
+  .theme-toggle,
+  .sound-toggle,
+  .board-size-control {
+    margin-top: 0;
+    margin-bottom: 8px;
+    margin-left: 0;
+    margin-right: 12px; }
 
   .grid-container {
     position: absolute;

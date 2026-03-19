@@ -21,7 +21,7 @@ function GameManager(size, InputManager, Actuator, StorageManager, soundManager)
 GameManager.prototype.restart = function () {
   this.storageManager.clearGameState();
   this.actuator.continueGame(); // Clear the game won/lost message
-  this.setup();
+  this.setup(true);
 };
 
 // Keep playing after winning (allows going over 2048)
@@ -35,12 +35,18 @@ GameManager.prototype.isGameTerminated = function () {
   return this.over || (this.won && !this.keepPlaying);
 };
 
-// Set up the game
-GameManager.prototype.setup = function () {
-  var previousState = this.storageManager.getGameState();
+GameManager.prototype._isCompatibleSavedState = function (state) {
+  if (!state || !state.grid) return false;
+  var savedSize = state.grid.size;
+  return savedSize === this.size;
+};
 
-  // Reload the game from a previous game if present
-  if (previousState) {
+// Set up the game
+GameManager.prototype.setup = function (forceNewGame) {
+  var previousState = forceNewGame ? null : this.storageManager.getGameState();
+
+  // Reload the game from a previous game if present AND compatible with current size
+  if (previousState && this._isCompatibleSavedState(previousState)) {
     this.grid        = new Grid(previousState.grid.size,
                                 previousState.grid.cells); // Reload grid
     this.score       = previousState.score;
@@ -48,6 +54,11 @@ GameManager.prototype.setup = function () {
     this.won         = previousState.won;
     this.keepPlaying = previousState.keepPlaying;
   } else {
+    if (previousState && !this._isCompatibleSavedState(previousState)) {
+      // Saved state is not portable across sizes; clear to avoid subtle rendering/logic issues.
+      this.storageManager.clearGameState();
+    }
+
     this.grid        = new Grid(this.size);
     this.score       = 0;
     this.over        = false;
@@ -105,6 +116,7 @@ GameManager.prototype.actuate = function () {
 // Represent the current game as an object
 GameManager.prototype.serialize = function () {
   return {
+    boardSize:   this.size,
     grid:        this.grid.serialize(),
     score:       this.score,
     over:        this.over,
