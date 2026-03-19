@@ -583,6 +583,12 @@ body.theme-dark .board-size-control select {
   line-height: 42px;
   margin-bottom: 0; }
 
+.game-buttons {
+  float: right;
+  display: inline-flex;
+  gap: 10px;
+  align-items: center; }
+
 .restart-button {
   display: inline-block;
   background: #8f7a66;
@@ -594,7 +600,24 @@ body.theme-dark .board-size-control select {
   line-height: 42px;
   display: block;
   text-align: center;
-  float: right; }
+  float: none; }
+
+.undo-button {
+  display: inline-block;
+  background: #8f7a66;
+  border-radius: 3px;
+  padding: 0 20px;
+  text-decoration: none;
+  color: #f9f6f2;
+  height: 40px;
+  line-height: 42px;
+  display: block;
+  text-align: center;
+  float: none; }
+
+.undo-button[aria-disabled="true"] {
+  opacity: 0.5;
+  pointer-events: none; }
 
 .game-explanation {
   margin-top: 50px; }
@@ -634,12 +657,26 @@ body.theme-dark .board-size-control select {
     box-sizing: border-box;
     line-height: 1.65; }
 
-  .restart-button {
+  .game-buttons {
     width: 42%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    float: right; }
+
+  .restart-button {
+    width: 100%;
     padding: 0;
     display: block;
     box-sizing: border-box;
-    margin-top: 2px; }
+    margin-top: 0; }
+
+  .undo-button {
+    width: 100%;
+    padding: 0;
+    display: block;
+    box-sizing: border-box;
+    margin-top: 0; }
 
   .game-container {
     margin-top: 17px;

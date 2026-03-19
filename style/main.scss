@@ -569,11 +569,31 @@ body.theme-dark {
   margin-bottom: 0;
 }
 
+.game-buttons {
+  float: right;
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+}
+
 .restart-button {
   @include button;
   display: block;
   text-align: center;
-  float: right;
+  float: none;
+}
+
+.undo-button {
+  @include button;
+  display: block;
+  text-align: center;
+  float: none;
+
+  // Disabled state: visually muted and non-interactive
+  &[aria-disabled="true"] {
+    opacity: 0.5;
+    pointer-events: none;
+  }
 }
 
 .game-explanation {
@@ -640,12 +660,27 @@ body.theme-dark {
     line-height: 1.65;
   }
 
-  .restart-button {
+  .game-buttons {
+    width: 42%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    float: right;
+  }
+
+  .restart-button,
+  .undo-button {
     width: 42%;
     padding: 0;
     display: block;
     box-sizing: border-box;
     margin-top: 2px;
+  }
+
+  .restart-button,
+  .undo-button {
+    width: 100%;
+    margin-top: 0;
   }
 
   // Render the game field at the right width

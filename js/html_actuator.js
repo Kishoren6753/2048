@@ -5,6 +5,7 @@ function HTMLActuator() {
   this.messageContainer = document.querySelector(".game-message");
   this.gridContainer    = document.querySelector(".grid-container");
   this.gameContainer    = document.querySelector(".game-container");
+  this.undoButton       = document.querySelector(".undo-button");
 
   this.score = 0;
 
@@ -48,6 +49,7 @@ HTMLActuator.prototype.actuate = function (grid, metadata) {
 
     self.updateScore(metadata.score);
     self.updateBestScore(metadata.bestScore);
+    self.updateUndoAvailability(!!metadata.canUndo);
 
     if (metadata.terminated) {
       if (metadata.over) {
@@ -68,6 +70,20 @@ HTMLActuator.prototype.actuate = function (grid, metadata) {
     }
 
   });
+};
+
+// PUBLIC_INTERFACE
+HTMLActuator.prototype.updateUndoAvailability = function (canUndo) {
+  /**
+   * Update Undo UI affordance.
+   *
+   * Inputs: canUndo:boolean
+   * Outputs: void
+   * Errors: none (no throws)
+   * Side effects: updates `.undo-button` aria-disabled attribute.
+   */
+  if (!this.undoButton) return;
+  this.undoButton.setAttribute("aria-disabled", canUndo ? "false" : "true");
 };
 
 // PUBLIC_INTERFACE

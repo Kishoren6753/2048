@@ -55,6 +55,12 @@ KeyboardInputManager.prototype.listen = function () {
                     event.shiftKey;
     var mapped    = map[event.which];
 
+    // Don't hijack keyboard shortcuts when user is interacting with form elements (e.g., board size <select>).
+    var target = event.target;
+    var tag = target && target.tagName ? target.tagName.toLowerCase() : "";
+    var isFormField = tag === "input" || tag === "textarea" || tag === "select" || tag === "button";
+    if (isFormField) return;
+
     if (!modifiers) {
       if (mapped !== undefined) {
         event.preventDefault();
@@ -66,12 +72,19 @@ KeyboardInputManager.prototype.listen = function () {
     if (!modifiers && event.which === 82) {
       self.restart.call(self, event);
     }
+
+    // U key triggers one-step undo
+    if (!modifiers && event.which === 85) {
+      event.preventDefault();
+      self.emit("undo");
+    }
   });
 
   // Respond to button presses
   this.bindButtonPress(".retry-button", this.restart);
   this.bindButtonPress(".restart-button", this.restart);
   this.bindButtonPress(".keep-playing-button", this.keepPlaying);
+  this.bindButtonPress(".undo-button", this.undo);
 
   // Respond to swipe events
   var touchStartClientX, touchStartClientY;
@@ -137,8 +150,14 @@ KeyboardInputManager.prototype.keepPlaying = function (event) {
   this.emit("keepPlaying");
 };
 
+KeyboardInputManager.prototype.undo = function (event) {
+  event.preventDefault();
+  this.emit("undo");
+};
+
 KeyboardInputManager.prototype.bindButtonPress = function (selector, fn) {
   var button = document.querySelector(selector);
+  if (!button) return;
   button.addEventListener("click", fn.bind(this));
   button.addEventListener(this.eventTouchend, fn.bind(this));
 };

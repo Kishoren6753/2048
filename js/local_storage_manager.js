@@ -21,6 +21,7 @@ window.fakeStorage = {
 function LocalStorageManager() {
   this.bestScoreKeyBase = "bestScore";
   this.gameStateKeyBase = "gameState";
+  this.undoStateKeyBase = "undoState";
   this.boardSizeKey = "boardSize";
 
   var supported = this.localStorageSupported();
@@ -91,4 +92,23 @@ LocalStorageManager.prototype.setGameState = function (gameState) {
 
 LocalStorageManager.prototype.clearGameState = function () {
   this.storage.removeItem(this._scopedKey(this.gameStateKeyBase));
+};
+
+// PUBLIC_INTERFACE
+LocalStorageManager.prototype.getUndoState = function () {
+  /** Get the persisted 1-step undo snapshot for the current board size (or null). */
+  var stateJSON = this.storage.getItem(this._scopedKey(this.undoStateKeyBase));
+  return stateJSON ? JSON.parse(stateJSON) : null;
+};
+
+// PUBLIC_INTERFACE
+LocalStorageManager.prototype.setUndoState = function (undoState) {
+  /** Persist the 1-step undo snapshot for the current board size. */
+  this.storage.setItem(this._scopedKey(this.undoStateKeyBase), JSON.stringify(undoState));
+};
+
+// PUBLIC_INTERFACE
+LocalStorageManager.prototype.clearUndoState = function () {
+  /** Clear the persisted 1-step undo snapshot for the current board size. */
+  this.storage.removeItem(this._scopedKey(this.undoStateKeyBase));
 };

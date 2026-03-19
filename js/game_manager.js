@@ -13,13 +13,38 @@ function GameManager(size, InputManager, Actuator, StorageManager, soundManager)
   this.inputManager.on("move", this.move.bind(this));
   this.inputManager.on("restart", this.restart.bind(this));
   this.inputManager.on("keepPlaying", this.keepPlaying.bind(this));
+  this.inputManager.on("undo", this.undo.bind(this));
 
   this.setup();
 }
 
+GameManager.prototype._isCompatibleUndoState = function (state) {
+  // Undo snapshot must match current board size and contain the minimal required fields.
+  if (!state || !state.grid) return false;
+  var size = state.grid.size;
+  return size === this.size;
+};
+
+GameManager.prototype._clearUndo = function () {
+  // Clears both in-memory and persisted undo snapshot.
+  this.undoState = null;
+  if (this.storageManager && this.storageManager.clearUndoState) {
+    this.storageManager.clearUndoState();
+  }
+};
+
+GameManager.prototype._setUndo = function (serializedState) {
+  // Store a 1-step undo snapshot (in-memory + persisted). Input is a serialized game state.
+  this.undoState = serializedState;
+  if (this.storageManager && this.storageManager.setUndoState) {
+    this.storageManager.setUndoState(serializedState);
+  }
+};
+
 // Restart the game
 GameManager.prototype.restart = function () {
   this.storageManager.clearGameState();
+  this._clearUndo();
   this.actuator.continueGame(); // Clear the game won/lost message
   this.setup(true);
 };
@@ -44,6 +69,7 @@ GameManager.prototype._isCompatibleSavedState = function (state) {
 // Set up the game
 GameManager.prototype.setup = function (forceNewGame) {
   var previousState = forceNewGame ? null : this.storageManager.getGameState();
+  var previousUndoState = forceNewGame ? null : (this.storageManager.getUndoState && this.storageManager.getUndoState());
 
   // Reload the game from a previous game if present AND compatible with current size
   if (previousState && this._isCompatibleSavedState(previousState)) {
@@ -53,6 +79,13 @@ GameManager.prototype.setup = function (forceNewGame) {
     this.over        = previousState.over;
     this.won         = previousState.won;
     this.keepPlaying = previousState.keepPlaying;
+
+    // Restore undo state if present and compatible; otherwise clear it.
+    if (previousUndoState && this._isCompatibleUndoState(previousUndoState)) {
+      this.undoState = previousUndoState;
+    } else {
+      this._clearUndo();
+    }
   } else {
     if (previousState && !this._isCompatibleSavedState(previousState)) {
       // Saved state is not portable across sizes; clear to avoid subtle rendering/logic issues.
@@ -64,6 +97,7 @@ GameManager.prototype.setup = function (forceNewGame) {
     this.over        = false;
     this.won         = false;
     this.keepPlaying = false;
+    this._clearUndo();
 
     // Add the initial tiles
     this.addStartTiles();
@@ -99,6 +133,8 @@ GameManager.prototype.actuate = function () {
   // Clear the state when the game is over (game over only, not win)
   if (this.over) {
     this.storageManager.clearGameState();
+    // Over ends the run: don't allow undo into a terminated session snapshot.
+    this._clearUndo();
   } else {
     this.storageManager.setGameState(this.serialize());
   }
@@ -108,7 +144,8 @@ GameManager.prototype.actuate = function () {
     over:       this.over,
     won:        this.won,
     bestScore:  this.storageManager.getBestScore(),
-    terminated: this.isGameTerminated()
+    terminated: this.isGameTerminated(),
+    canUndo:    !!this.undoState
   });
 
 };
@@ -148,6 +185,12 @@ GameManager.prototype.move = function (direction) {
   var self = this;
 
   if (this.isGameTerminated()) return; // Don't do anything if the game's over
+
+  // UndoFlow (1-step) - capture pre-move state snapshot.
+  // Contract:
+  // - Captured only for actual moves (i.e., when at least one tile position changes).
+  // - Snapshot includes grid + score + termination flags to restore deterministically.
+  var undoCandidate = this.serialize();
 
   var cell, tile;
 
@@ -201,6 +244,9 @@ GameManager.prototype.move = function (direction) {
   });
 
   if (moved) {
+    // Persist the "before move" snapshot as the one-step undo.
+    this._setUndo(undoCandidate);
+
     this.addRandomTile();
 
     if (!this.movesAvailable()) {
@@ -222,6 +268,51 @@ GameManager.prototype.move = function (direction) {
 
     this.actuate();
   }
+};
+
+// PUBLIC_INTERFACE
+GameManager.prototype.undo = function () {
+  /**
+   * UndoFlow (1-step) - restore previous game state + score for the current board size.
+   *
+   * Inputs: none (uses in-memory undoState or falls back to persisted undoState).
+   * Outputs: void
+   * Invariants:
+   * - Undo is scoped to current board size; incompatible snapshots are discarded.
+   * - After undo, there is no further undo available until another successful move.
+   * Errors: no throws; logs warnings and safely no-ops on invalid states.
+   * Side effects:
+   * - Mutates grid/score/flags
+   * - Updates persistence via LocalStorageManager.setGameState/clearUndoState
+   * - Updates UI via actuator.actuate
+   */
+  var snapshot = this.undoState || (this.storageManager.getUndoState && this.storageManager.getUndoState());
+  if (!snapshot) return;
+
+  if (!this._isCompatibleUndoState(snapshot)) {
+    console.warn("[UndoFlow] Incompatible undo snapshot; clearing.");
+    this._clearUndo();
+    this.actuate();
+    return;
+  }
+
+  this.grid        = new Grid(snapshot.grid.size, snapshot.grid.cells);
+  this.score       = snapshot.score;
+  this.over        = snapshot.over;
+  this.won         = snapshot.won;
+  this.keepPlaying = snapshot.keepPlaying;
+
+  // One-step: consume it immediately.
+  this._clearUndo();
+
+  // Ensure UI message state is consistent after undo.
+  // If we undid out of a terminated state, clear the message overlay.
+  if (!this.isGameTerminated()) {
+    this.actuator.continueGame();
+  }
+
+  // Persist restored state and re-render
+  this.actuate();
 };
 
 // Get the vector representing the chosen direction
