@@ -26,7 +26,8 @@
       this.el.className = this.toString();
     },
     contains: function (token) {
-      return this.el.className.indexOf(token) != -1;
+      // Avoid substring matches (e.g. "bar" should not match "foobar")
+      return (" " + this.el.className + " ").indexOf(" " + token + " ") !== -1;
     },
     item: function (index) {
       return this[index] || null;

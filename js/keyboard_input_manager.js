@@ -77,6 +77,12 @@ KeyboardInputManager.prototype.listen = function () {
   var touchStartClientX, touchStartClientY;
   var gameContainer = document.getElementsByClassName("game-container")[0];
 
+  // Guard against missing container in unexpected DOM contexts (e.g. embedded
+  // usage/tests). Without this, the game can crash on startup.
+  if (!gameContainer) {
+    return;
+  }
+
   gameContainer.addEventListener(this.eventTouchstart, function (event) {
     if ((!window.navigator.msPointerEnabled && event.touches.length > 1) ||
         event.targetTouches.length > 1) {
