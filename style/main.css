@@ -10,6 +10,123 @@ html, body {
 body {
   margin: 80px 0; }
 
+.top-nav {
+  margin-bottom: 18px;
+  text-align: right; }
+
+.top-nav .nav-link {
+  display: inline-block;
+  background: #bbada0;
+  border-radius: 3px;
+  padding: 8px 12px;
+  text-decoration: none;
+  color: #f9f6f2;
+  height: auto;
+  line-height: 1.2;
+  margin-left: 8px; }
+
+.top-nav .nav-link.is-active {
+  background: #8f7a66; }
+
+.view {
+  display: none; }
+
+.view.view-active {
+  display: block; }
+
+.panel-title {
+  margin: 18px 0 12px 0;
+  font-size: 28px;
+  font-weight: bold; }
+
+.panel {
+  background: #eee4da;
+  border-radius: 6px;
+  padding: 15px; }
+
+.panel-row {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 15px; }
+
+.panel-row:last-child {
+  margin-bottom: 0; }
+
+.panel-col {
+  flex: 1;
+  min-width: 0; }
+
+.form-label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 6px; }
+
+.text-input, .text-area, .select-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d8d4d0;
+  border-radius: 3px;
+  padding: 10px 12px;
+  font-family: "Clear Sans", "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  color: #776e65;
+  background: #faf8ef; }
+
+.text-area {
+  resize: vertical; }
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-weight: bold; }
+
+.check-row input {
+  width: 18px;
+  height: 18px; }
+
+.stat-line {
+  display: flex;
+  justify-content: space-between;
+  background: rgba(187, 173, 160, 0.25);
+  border-radius: 3px;
+  padding: 10px 12px;
+  margin-bottom: 10px; }
+
+.stat-label {
+  font-weight: bold; }
+
+.stat-value {
+  font-weight: bold; }
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap; }
+
+.ui-button {
+  display: inline-block;
+  background: #8f7a66;
+  border-radius: 3px;
+  padding: 0 20px;
+  text-decoration: none;
+  color: #f9f6f2;
+  height: 40px;
+  line-height: 42px;
+  border: 0;
+  cursor: pointer;
+  font-weight: bold; }
+
+.ui-button.ui-button-secondary {
+  background: #bbada0; }
+
+.status-text {
+  margin-top: 10px;
+  margin-bottom: 0;
+  min-height: 22px; }
+
 .heading:after {
   content: "";
   display: block;
@@ -556,6 +673,23 @@ hr {
 
   .heading {
     margin-bottom: 10px; }
+
+  .top-nav {
+    text-align: left; }
+
+  .top-nav .nav-link {
+    margin-left: 0;
+    margin-right: 8px;
+    margin-bottom: 8px; }
+
+  .panel-row {
+    display: block; }
+
+  .panel-col {
+    margin-bottom: 12px; }
+
+  .panel-col:last-child {
+    margin-bottom: 0; }
 
   .game-intro {
     width: 55%;
