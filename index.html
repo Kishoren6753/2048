@@ -18,6 +18,12 @@
 </head>
 <body>
   <div class="container">
+    <div class="top-nav">
+      <a class="nav-link" href="#/game" data-route="game">Game</a>
+      <a class="nav-link" href="#/profile" data-route="profile">Profile</a>
+      <a class="nav-link" href="#/settings" data-route="settings">Settings</a>
+    </div>
+
     <div class="heading">
       <h1 class="title">2048</h1>
       <div class="scores-container">
@@ -26,51 +32,133 @@
       </div>
     </div>
 
-    <div class="above-game">
-      <p class="game-intro">Join the numbers and get to the <strong>2048 tile!</strong></p>
-      <a class="restart-button">New Game</a>
-    </div>
+    <main class="view-container" role="main" aria-live="polite">
+      <section id="view-game" class="view view-active" data-view="game">
+        <div class="above-game">
+          <p class="game-intro">Join the numbers and get to the <strong>2048 tile!</strong></p>
+          <a class="restart-button">New Game</a>
+        </div>
 
-    <div class="game-container">
-      <div class="game-message">
-        <p></p>
-        <div class="lower">
-	        <a class="keep-playing-button">Keep going</a>
-          <a class="retry-button">Try again</a>
-        </div>
-      </div>
+        <div class="game-container">
+          <div class="game-message">
+            <p></p>
+            <div class="lower">
+	            <a class="keep-playing-button">Keep going</a>
+              <a class="retry-button">Try again</a>
+            </div>
+          </div>
 
-      <div class="grid-container">
-        <div class="grid-row">
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-        </div>
-        <div class="grid-row">
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-        </div>
-        <div class="grid-row">
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-        </div>
-        <div class="grid-row">
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-        </div>
-      </div>
+          <div class="grid-container">
+            <div class="grid-row">
+              <div class="grid-cell"></div>
+              <div class="grid-cell"></div>
+              <div class="grid-cell"></div>
+              <div class="grid-cell"></div>
+            </div>
+            <div class="grid-row">
+              <div class="grid-cell"></div>
+              <div class="grid-cell"></div>
+              <div class="grid-cell"></div>
+              <div class="grid-cell"></div>
+            </div>
+            <div class="grid-row">
+              <div class="grid-cell"></div>
+              <div class="grid-cell"></div>
+              <div class="grid-cell"></div>
+              <div class="grid-cell"></div>
+            </div>
+            <div class="grid-row">
+              <div class="grid-cell"></div>
+              <div class="grid-cell"></div>
+              <div class="grid-cell"></div>
+              <div class="grid-cell"></div>
+            </div>
+          </div>
 
-      <div class="tile-container">
+          <div class="tile-container"></div>
+        </div>
+      </section>
 
-      </div>
-    </div>
+      <section id="view-profile" class="view" data-view="profile" aria-labelledby="profile-title">
+        <h2 id="profile-title" class="panel-title">User profile</h2>
+
+        <div class="panel">
+          <div class="panel-row">
+            <div class="panel-col">
+              <label class="form-label" for="profile-display-name">Display name</label>
+              <input id="profile-display-name" class="text-input" type="text" maxlength="40" autocomplete="nickname" />
+            </div>
+            <div class="panel-col">
+              <label class="form-label" for="profile-bio">Bio</label>
+              <textarea id="profile-bio" class="text-area" rows="3" maxlength="160"></textarea>
+            </div>
+          </div>
+
+          <div class="panel-row">
+            <div class="panel-col">
+              <div class="stat-line">
+                <span class="stat-label">Best score</span>
+                <span id="profile-best-score" class="stat-value">0</span>
+              </div>
+              <div class="stat-line">
+                <span class="stat-label">Games played</span>
+                <span id="profile-games-played" class="stat-value">0</span>
+              </div>
+            </div>
+            <div class="panel-col">
+              <div class="actions">
+                <button id="profile-save" class="ui-button" type="button">Save profile</button>
+                <button id="profile-reset" class="ui-button ui-button-secondary" type="button">Reset</button>
+              </div>
+              <p id="profile-status" class="status-text" role="status"></p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-settings" class="view" data-view="settings" aria-labelledby="settings-title">
+        <h2 id="settings-title" class="panel-title">Settings</h2>
+
+        <div class="panel">
+          <div class="panel-row">
+            <div class="panel-col">
+              <label class="form-label" for="setting-theme">Theme</label>
+              <select id="setting-theme" class="select-input">
+                <option value="classic">Classic</option>
+                <option value="high-contrast">High contrast</option>
+              </select>
+            </div>
+            <div class="panel-col">
+              <label class="form-label" for="setting-input-mode">Input</label>
+              <select id="setting-input-mode" class="select-input">
+                <option value="keyboard-touch">Keyboard + touch</option>
+                <option value="keyboard-only">Keyboard only</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="panel-row">
+            <div class="panel-col">
+              <label class="check-row">
+                <input id="setting-reduced-motion" type="checkbox" />
+                <span>Reduce motion</span>
+              </label>
+              <label class="check-row">
+                <input id="setting-show-tips" type="checkbox" />
+                <span>Show tips</span>
+              </label>
+            </div>
+            <div class="panel-col">
+              <div class="actions">
+                <button id="settings-save" class="ui-button" type="button">Save settings</button>
+                <button id="settings-reset" class="ui-button ui-button-secondary" type="button">Reset to defaults</button>
+              </div>
+              <p id="settings-status" class="status-text" role="status"></p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
 
     <p class="game-explanation">
       <strong class="important">How to play:</strong> Use your <strong>arrow keys</strong> to move the tiles. When two tiles with the same number touch, they <strong>merge into one!</strong>
