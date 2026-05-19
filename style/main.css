@@ -10,6 +10,79 @@ html, body {
 body {
   margin: 80px 0; }
 
+.top-nav .nav-link.nav-button {
+  border: 0;
+  cursor: pointer;
+  font: inherit; }
+
+.top-nav .nav-link.nav-button:focus {
+  outline: 3px solid rgba(143, 122, 102, 0.45);
+  outline-offset: 2px; }
+
+/* Dark mode
+   Applies across all views. This is separate from the existing "theme" setting. */
+html[data-color-mode="dark"], html[data-color-mode="dark"] body {
+  background: #121212;
+  color: #e8e4dd; }
+
+html[data-color-mode="dark"] a {
+  color: #e8e4dd; }
+
+html[data-color-mode="dark"] hr {
+  border-bottom-color: rgba(232, 228, 221, 0.2); }
+
+html[data-color-mode="dark"] .top-nav .nav-link {
+  background: #2a2a2a;
+  color: #f9f6f2; }
+
+html[data-color-mode="dark"] .top-nav .nav-link.is-active {
+  background: #3a3a3a; }
+
+html[data-color-mode="dark"] .panel {
+  background: #1e1e1e; }
+
+html[data-color-mode="dark"] .stat-line {
+  background: rgba(255, 255, 255, 0.06); }
+
+html[data-color-mode="dark"] .text-input,
+html[data-color-mode="dark"] .text-area,
+html[data-color-mode="dark"] .select-input {
+  background: #161616;
+  color: #e8e4dd;
+  border-color: rgba(255, 255, 255, 0.18); }
+
+html[data-color-mode="dark"] .ui-button {
+  background: #3a3a3a;
+  color: #f9f6f2; }
+
+html[data-color-mode="dark"] .ui-button.ui-button-secondary {
+  background: #2a2a2a; }
+
+html[data-color-mode="dark"] .restart-button,
+html[data-color-mode="dark"] .game-container .game-message a {
+  background: #3a3a3a;
+  color: #f9f6f2; }
+
+html[data-color-mode="dark"] .game-container {
+  background: #2a2a2a; }
+
+html[data-color-mode="dark"] .grid-cell {
+  background: rgba(255, 255, 255, 0.08); }
+
+html[data-color-mode="dark"] .tile .tile-inner {
+  /* Keep tile color logic, but ensure dark-mode readability on "neutral" tiles. */
+  color: #2b241d; }
+
+html[data-color-mode="dark"] .tile.tile-2 .tile-inner,
+html[data-color-mode="dark"] .tile.tile-4 .tile-inner {
+  color: #2b241d; }
+
+html[data-color-mode="dark"] .game-container .game-message {
+  background: rgba(0, 0, 0, 0.55); }
+
+html[data-color-mode="dark"] .game-container .game-message.game-won {
+  background: rgba(237, 194, 46, 0.25); }
+
 .top-nav {
   margin-bottom: 18px;
   text-align: right; }

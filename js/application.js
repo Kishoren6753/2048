@@ -7,6 +7,7 @@
     const PROFILE_KEY = 'userProfile';
     const SETTINGS_KEY = 'userSettings';
     const STATS_KEY = 'userStats';
+    const COLOR_MODE_KEY = 'colorMode';
 
     const DEFAULT_PROFILE = {
         displayName: '',
@@ -68,6 +69,65 @@
 
     function saveStats(stats) {
         window.localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+    }
+
+    /**
+     * Loads persisted color mode preference.
+     * @return {'light'|'dark'} The persisted (or default) color mode.
+     */
+    function loadColorMode() {
+        const saved = String(window.localStorage.getItem(COLOR_MODE_KEY) || '').toLowerCase();
+        return saved === 'dark' ? 'dark' : 'light';
+    }
+
+    /**
+     * Persists color mode preference.
+     * @param {'light'|'dark'} mode Color mode.
+     */
+    function saveColorMode(mode) {
+        window.localStorage.setItem(COLOR_MODE_KEY, mode);
+    }
+
+    /**
+     * Applies the current color mode by setting a root data attribute that CSS can style.
+     * @param {'light'|'dark'} mode Color mode.
+     */
+    function applyColorMode(mode) {
+        document.documentElement.setAttribute('data-color-mode', mode);
+    }
+
+    /**
+     * Updates the toggle button to reflect the current mode.
+     * @param {'light'|'dark'} mode Color mode.
+     */
+    function syncColorModeToggleUI(mode) {
+        const toggle = document.getElementById('theme-toggle');
+        if (!toggle) {
+            return;
+        }
+
+        const isDark = mode === 'dark';
+        toggle.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+        toggle.setAttribute('aria-label', isDark ? 'Disable dark mode' : 'Enable dark mode');
+        toggle.textContent = isDark ? 'Light' : 'Dark';
+    }
+
+    /**
+     * Initializes the dark mode toggle UI.
+     */
+    function wireColorModeToggle() {
+        const toggle = document.getElementById('theme-toggle');
+        if (!toggle) {
+            return;
+        }
+
+        toggle.addEventListener('click', function () {
+            const current = loadColorMode();
+            const next = current === 'dark' ? 'light' : 'dark';
+            saveColorMode(next);
+            applyColorMode(next);
+            syncColorModeToggleUI(next);
+        });
     }
 
     function setStatusText(elementId, message) {
@@ -282,6 +342,7 @@
         wireProfileHandlers();
         wireSettingsHandlers();
         wireGameStats();
+        wireColorModeToggle();
 
         window.addEventListener('hashchange', onRouteChange);
 
@@ -305,5 +366,10 @@
         const settings = loadSettings();
         applyTheme(settings);
         applyReducedMotion(settings);
+
+        // Apply persisted dark mode immediately.
+        const colorMode = loadColorMode();
+        applyColorMode(colorMode);
+        syncColorModeToggleUI(colorMode);
     });
 }());
